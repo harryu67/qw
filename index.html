@@ -3,33 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Educational Analog Clock</title>
+    <title>Perfect Educational Analog Clock</title>
     <style>
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* ඔරලෝසුව ඉහළටම තල්ලු කිරීමට flex-start භාවිතා කරන ලදී */
-            justify-content: flex-start; 
+            justify-content: center; /* සියල්ල තිරයේ මැදටම ගෙන ඒම */
             min-height: 100vh;
             background-color: #f4f4f4;
             font-family: Arial, sans-serif;
             margin: 0;
-            /* ඉහළ පරතරය අවම කර ඔරලෝසුව ඉහළට ගන්නා ලදී */
-            padding: 10px 15px; 
+            padding: 20px;
             box-sizing: border-box;
         }
 
         .clock-container {
             background: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             box-sizing: border-box;
-            /* ඔරලෝසුව තිරයේ ඉහළින්ම තැබීමට */
-            margin-top: 5px; 
         }
 
         svg {
@@ -39,55 +35,54 @@
             height: auto;
         }
 
-        /* වේලාව වෙනස් කරන කොටස */
+        /* වේලාව තෝරන කොටස */
         .controls {
-            margin-top: 20px;
+            margin-top: 30px;
             text-align: center;
             background: #ffffff;
-            padding: 20px;
+            padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #eaeaea;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            border: 1px solid #eee;
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             box-sizing: border-box;
-            /* මෙම කොටස තෝරන මෙවලම මගින් වැසී යනු ඇත */
         }
 
         label {
             display: block;
-            font-size: 16px;
-            margin-bottom: 12px;
+            font-size: 18px;
+            margin-bottom: 15px;
             font-weight: 600;
-            color: #4b5563;
+            color: #333;
         }
 
         input[type="time"] {
-            font-size: 28px;
-            padding: 10px;
-            border: 2px solid #d1d5db;
-            border-radius: 10px;
+            font-size: 32px;
+            padding: 15px;
+            border: 3px solid #333;
+            border-radius: 12px;
             font-weight: bold;
-            color: #1f2937;
-            background-color: #f9fafb;
+            color: #000;
+            background-color: #fff;
             outline: none;
             cursor: pointer;
             width: 100%;
             box-sizing: border-box;
             text-align: center;
             font-family: 'Courier New', Courier, monospace;
-            -webkit-appearance: none; /* Mobile වල ලස්සනට පෙන්වීමට */
+            transition: all 0.2s;
         }
 
         input[type="time"]:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+            border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0,123,255,0.2);
         }
 
-        /* ඉතා කුඩා තිර සඳහා */
-        @media (max-width: 360px) {
-            .clock-container { padding: 10px; }
-            input[type="time"] { font-size: 24px; }
+        @media (max-width: 400px) {
+            input[type="time"] {
+                font-size: 28px;
+            }
         }
     </style>
 </head>
@@ -104,14 +99,14 @@
             <path id="angle-arc" fill="none" stroke="black" stroke-width="3" />
 
             <g id="hour-hand">
-                <polygon points="192,200 192,120 183,120 200,85 217,120 208,120 208,200" fill="white" stroke="black" stroke-width="4" stroke-linejoin="round"/>
+                <polygon points="191,200 191,110 181,110 200,75 219,110 209,110 209,200" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
             </g>
 
             <g id="minute-hand">
-                <polygon points="194,200 194,70 186,70 200,40 214,70 206,70 206,200" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
+                <polygon points="193,200 193,60 184,60 200,30 216,60 207,60 207,200" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
             </g>
 
-            <circle cx="200" cy="200" r="8" fill="white" stroke="black" stroke-width="4" />
+            <circle cx="200" cy="200" r="7" fill="white" stroke="black" stroke-width="4.5" />
         </svg>
     </div>
 
@@ -135,7 +130,7 @@
                 
                 let rStart = 182; 
                 let rEnd = isHour ? 155 : 170; 
-                let strokeWidth = isHour ? 6 : 2.5; 
+                let strokeWidth = isHour ? 6.5 : 2.5; 
 
                 let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', '200');
@@ -150,9 +145,8 @@
                 if (isHour) {
                     let num = i === 0 ? 12 : i / 5;
                     let text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    
                     let rad = (angle - 90) * Math.PI / 180;
-                    let radius = 125; 
+                    let radius = 118; 
                     let x = 200 + radius * Math.cos(rad);
                     let y = 200 + radius * Math.sin(rad) + 16; 
                     
@@ -160,7 +154,7 @@
                     text.setAttribute('y', y);
                     text.setAttribute('text-anchor', 'middle');
                     text.setAttribute('font-size', '44px');
-                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('font-weight', '900');
                     text.setAttribute('font-family', 'Arial, sans-serif');
                     text.textContent = num;
                     numbersGroup.appendChild(text);
@@ -177,10 +171,10 @@
                 endAngle = Math.min(hAngle, mAngle) + 360;
             }
 
+            let radius = 45;
             let startRad = (startAngle - 90) * Math.PI / 180;
             let endRad = (endAngle - 90) * Math.PI / 180;
 
-            let radius = 55; 
             let startX = 200 + radius * Math.cos(startRad);
             let startY = 200 + radius * Math.sin(startRad);
             let endX = 200 + radius * Math.cos(endRad);
