@@ -10,10 +10,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             background-color: #f4f4f4;
             font-family: Arial, sans-serif;
             margin: 0;
+            padding: 15px; /* කුඩා තිර වලදී වටේට ඉඩ තබාගැනීමට */
+            box-sizing: border-box;
         }
 
         .clock-container {
@@ -21,22 +23,30 @@
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px; /* පරිගණක වලදී උපරිම පළල */
+            box-sizing: border-box;
         }
 
+        /* SVG ඔරලෝසුව තිරයට අනුව කුඩා/විශාල වීමට සැකසීම */
         svg {
             display: block;
             margin: 0 auto;
+            width: 100%;
+            height: auto;
         }
 
-        /* නවීන පෙනුමකට සකස් කළ Controls කොටස */
         .controls {
-            margin-top: 35px;
+            margin-top: 25px;
             text-align: center;
             background: #ffffff;
-            padding: 25px 40px;
+            padding: 25px 20px;
             border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.08);
             border: 1px solid #eaeaea;
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
         }
 
         label {
@@ -50,7 +60,7 @@
 
         input[type="time"] {
             font-size: 32px;
-            padding: 12px 20px;
+            padding: 12px 10px;
             border: 2px solid #d1d5db;
             border-radius: 10px;
             font-weight: bold;
@@ -61,6 +71,9 @@
             transition: all 0.3s ease;
             font-family: 'Courier New', Courier, monospace;
             letter-spacing: 2px;
+            width: 100%; /* බොත්තම කොටුව පුරා පැතිරීමට */
+            box-sizing: border-box;
+            text-align: center;
         }
 
         input[type="time"]:hover {
@@ -72,12 +85,22 @@
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
             background-color: #ffffff;
         }
+
+        /* ඉතා කුඩා තිර සඳහා අකුරු ප්‍රමාණය මදක් වෙනස් කිරීම */
+        @media (max-width: 380px) {
+            input[type="time"] {
+                font-size: 26px;
+            }
+            .clock-container {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="clock-container">
-        <svg id="clock-svg" width="450" height="450" viewBox="0 0 400 400">
+        <svg id="clock-svg" viewBox="0 0 400 400">
             <circle cx="200" cy="200" r="195" fill="white" stroke="black" stroke-width="6" />
             <circle cx="200" cy="200" r="182" fill="none" stroke="black" stroke-width="2.5" />
 
@@ -112,16 +135,14 @@
         const angleArc = document.getElementById('angle-arc');
         const timePicker = document.getElementById('timePicker');
 
-        // 1. ඔරලෝසුවේ ඉරි සහ අංක නිර්මාණය කිරීම
         function drawClockFace() {
             for (let i = 0; i < 60; i++) {
                 let angle = i * 6;
                 let isHour = i % 5 === 0;
                 
-                // ඉරි වල දිග සහ ඝනකම පැහැදිලිව වෙනස් කිරීම
-                let rStart = 182; // ඇතුළත රවුමෙන් පටන් ගනී
-                let rEnd = isHour ? 155 : 170; // පැය රේඛා වඩා දිගයි
-                let strokeWidth = isHour ? 6 : 2.5; // පැය රේඛා වඩා ඝනකමයි
+                let rStart = 182; 
+                let rEnd = isHour ? 155 : 170; 
+                let strokeWidth = isHour ? 6 : 2.5; 
 
                 let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', '200');
@@ -133,13 +154,12 @@
                 line.setAttribute('transform', `rotate(${angle} 200 200)`);
                 ticksGroup.appendChild(line);
 
-                // අංක 1 සිට 12 දක්වා ලිවීම
                 if (isHour) {
                     let num = i === 0 ? 12 : i / 5;
                     let text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     
                     let rad = (angle - 90) * Math.PI / 180;
-                    let radius = 125; // අංක පැහැදිලිව පෙනෙන සේ ඇතුළට ගැනීම
+                    let radius = 125; 
                     let x = 200 + radius * Math.cos(rad);
                     let y = 200 + radius * Math.sin(rad) + 16; 
                     
@@ -155,7 +175,6 @@
             }
         }
 
-        // 2. කෝණයේ රේඛාව (Arc) ඇඳීම
         function drawArc(hAngle, mAngle) {
             let startAngle = Math.min(hAngle, mAngle);
             let endAngle = Math.max(hAngle, mAngle);
@@ -168,7 +187,7 @@
             let startRad = (startAngle - 90) * Math.PI / 180;
             let endRad = (endAngle - 90) * Math.PI / 180;
 
-            let radius = 55; // කෝණ රේඛාව මදක් විශාල කිරීම
+            let radius = 55; 
             let startX = 200 + radius * Math.cos(startRad);
             let startY = 200 + radius * Math.sin(startRad);
             let endX = 200 + radius * Math.cos(endRad);
@@ -178,7 +197,6 @@
             angleArc.setAttribute('d', d);
         }
 
-        // 3. වේලාව යාවත්කාලීන කිරීම
         function setTime() {
             const timeValues = timePicker.value.split(':');
             let hours = parseInt(timeValues[0]);
