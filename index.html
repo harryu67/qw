@@ -9,13 +9,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            /* ජංගම දුරකථන වලදී ඉහළ සිට ආරම්භ වීමට flex-start යොදා ඇත */
+            justify-content: flex-start; 
             min-height: 100vh;
             background-color: #f4f4f4;
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 15px; /* කුඩා තිර වලදී වටේට ඉඩ තබාගැනීමට */
+            padding: 20px 15px; 
             box-sizing: border-box;
+            overflow-y: auto; /* ඉඩ මදි වුවහොත් scroll කිරීමට */
+        }
+
+        /* පරිගණක තිර වලදී පමණක් මැදට පෙන්වීමට */
+        @media (min-width: 768px) {
+            body {
+                justify-content: center;
+                padding: 15px;
+            }
         }
 
         .clock-container {
@@ -24,11 +34,10 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 450px; /* පරිගණක වලදී උපරිම පළල */
+            max-width: 420px; 
             box-sizing: border-box;
         }
 
-        /* SVG ඔරලෝසුව තිරයට අනුව කුඩා/විශාල වීමට සැකසීම */
         svg {
             display: block;
             margin: 0 auto;
@@ -37,7 +46,8 @@
         }
 
         .controls {
-            margin-top: 25px;
+            margin-top: 40px; /* ඔරලෝසුවෙන් පහළට වැඩි ඉඩක් තැබීම */
+            margin-bottom: 50px; /* පහළින් තවදුරටත් ඉඩ තැබීම */
             text-align: center;
             background: #ffffff;
             padding: 25px 20px;
@@ -45,7 +55,7 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.08);
             border: 1px solid #eaeaea;
             width: 100%;
-            max-width: 450px;
+            max-width: 420px;
             box-sizing: border-box;
         }
 
@@ -55,7 +65,6 @@
             margin-bottom: 15px;
             font-weight: 600;
             color: #4b5563;
-            letter-spacing: 0.5px;
         }
 
         input[type="time"] {
@@ -68,31 +77,20 @@
             background-color: #f9fafb;
             outline: none;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Courier New', Courier, monospace;
-            letter-spacing: 2px;
-            width: 100%; /* බොත්තම කොටුව පුරා පැතිරීමට */
+            width: 100%;
             box-sizing: border-box;
             text-align: center;
-        }
-
-        input[type="time"]:hover {
-            border-color: #9ca3af;
+            font-family: 'Courier New', Courier, monospace;
         }
 
         input[type="time"]:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
-            background-color: #ffffff;
         }
 
-        /* ඉතා කුඩා තිර සඳහා අකුරු ප්‍රමාණය මදක් වෙනස් කිරීම */
         @media (max-width: 380px) {
             input[type="time"] {
                 font-size: 26px;
-            }
-            .clock-container {
-                padding: 15px;
             }
         }
     </style>
@@ -105,7 +103,6 @@
             <circle cx="200" cy="200" r="182" fill="none" stroke="black" stroke-width="2.5" />
 
             <g id="ticks"></g>
-
             <g id="numbers"></g>
 
             <path id="angle-arc" fill="none" stroke="black" stroke-width="3" />
