@@ -3,205 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Perfect Educational Analog Clock</title>
+    <title>ගණිත ධාවකයා - මැජික් වනාන්තරය</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center; /* සියල්ල තිරයේ මැදටම ගෙන ඒම */
-            min-height: 100vh;
-            background-color: #f4f4f4;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; /* ස්වයිප් කරද්දී පිටුව එහා මෙහා වීම නවතයි */ }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
+        #question { 
+            font-size: 45px; font-weight: bold; color: #fff; 
+            background: rgba(0, 0, 0, 0.7); padding: 15px 40px; 
+            border-radius: 20px; display: inline-block; 
+            border: 4px solid #FFD700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
-
-        .clock-container {
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            box-sizing: border-box;
+        #scoreBox { 
+            position: absolute; top: 20px; left: 30px; 
+            font-size: 30px; font-weight: bold; color: #FFD700; 
+            background: rgba(0,0,0,0.7); padding: 10px 25px; 
+            border-radius: 15px; border: 2px solid #FFD700;
+            transition: transform 0.1s;
         }
-
-        svg {
-            display: block;
-            margin: 0 auto;
-            width: 100%;
-            height: auto;
+        #instructions { 
+            position: absolute; bottom: 20px; width: 100%; 
+            text-align: center; color: #fff; font-size: 22px; 
+            font-weight: bold; text-shadow: 2px 2px 4px #000; pointer-events: none;
         }
-
-        /* වේලාව තෝරන කොටස */
-        .controls {
-            margin-top: 30px;
-            text-align: center;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-            border: 1px solid #eee;
-            width: 100%;
-            max-width: 450px;
-            box-sizing: border-box;
+        #gameOverOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(200, 0, 0, 0.85); display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 20;
         }
+        #gameOverOverlay h1 { font-size: 80px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
+        #gameOverOverlay p { font-size: 30px; margin-top: 10px; text-align: center; }
 
-        label {
-            display: block;
-            font-size: 18px;
-            margin-bottom: 15px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input[type="time"] {
-            font-size: 32px;
-            padding: 15px;
-            border: 3px solid #333;
-            border-radius: 12px;
-            font-weight: bold;
-            color: #000;
-            background-color: #fff;
-            outline: none;
-            cursor: pointer;
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
-            font-family: 'Courier New', Courier, monospace;
-            transition: all 0.2s;
-        }
-
-        input[type="time"]:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 10px rgba(0,123,255,0.2);
-        }
-
-        @media (max-width: 400px) {
-            input[type="time"] {
-                font-size: 28px;
-            }
+        /* දුරකථන තිර සඳහා (Mobile Screens) UI එක කුඩා කිරීම */
+        @media (max-width: 768px) {
+            #question { font-size: 32px; padding: 10px 25px; border-width: 3px; }
+            #scoreBox { font-size: 22px; padding: 8px 15px; left: 15px; top: 15px; }
+            #instructions { font-size: 16px; bottom: 30px; }
+            #gameOverOverlay h1 { font-size: 50px; }
+            #gameOverOverlay p { font-size: 20px; }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
-    <div class="clock-container">
-        <svg id="clock-svg" viewBox="0 0 400 400">
-            <circle cx="200" cy="200" r="195" fill="white" stroke="black" stroke-width="6" />
-            <circle cx="200" cy="200" r="182" fill="none" stroke="black" stroke-width="2.5" />
-
-            <g id="ticks"></g>
-            <g id="numbers"></g>
-
-            <path id="angle-arc" fill="none" stroke="black" stroke-width="3" />
-
-            <g id="hour-hand">
-                <polygon points="191,200 191,110 181,110 200,75 219,110 209,110 209,200" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
-            </g>
-
-            <g id="minute-hand">
-                <polygon points="193,200 193,60 184,60 200,30 216,60 207,60 207,200" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
-            </g>
-
-            <circle cx="200" cy="200" r="7" fill="white" stroke="black" stroke-width="4.5" />
-        </svg>
+    <div id="ui">
+        <div id="scoreBox">ලකුණු: <span id="score">0</span></div>
+        <div id="question">? x ? =</div>
     </div>
-
-    <div class="controls">
-        <label>වේලාව වෙනස් කරන්න 🕒</label>
-        <input type="time" id="timePicker" value="04:10">
+    <div id="instructions">මංතීරුව මාරු කිරීමට Swipe කරන්න (හෝ ← → Keys)</div>
+    
+    <div id="gameOverOverlay">
+        <h1>වැරදියි!</h1>
+        <p>නැවත ආරම්භ වෙමින් පවතී...</p>
     </div>
 
     <script>
-        const ticksGroup = document.getElementById('ticks');
-        const numbersGroup = document.getElementById('numbers');
-        const hourHand = document.getElementById('hour-hand');
-        const minuteHand = document.getElementById('minute-hand');
-        const angleArc = document.getElementById('angle-arc');
-        const timePicker = document.getElementById('timePicker');
+        // --- 1. මූලික පරිසරය ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x5CB3FF); 
+        scene.fog = new THREE.Fog(0x5CB3FF, 40, 120); 
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, 7, 14);
+        camera.lookAt(0, 2, -10);
 
-        function drawClockFace() {
-            for (let i = 0; i < 60; i++) {
-                let angle = i * 6;
-                let isHour = i % 5 === 0;
-                
-                let rStart = 182; 
-                let rEnd = isHour ? 155 : 170; 
-                let strokeWidth = isHour ? 6.5 : 2.5; 
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-                let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '200');
-                line.setAttribute('y1', 200 - rStart);
-                line.setAttribute('x2', '200');
-                line.setAttribute('y2', 200 - rEnd);
-                line.setAttribute('stroke', 'black');
-                line.setAttribute('stroke-width', strokeWidth);
-                line.setAttribute('transform', `rotate(${angle} 200 200)`);
-                ticksGroup.appendChild(line);
+        // --- 2. ආලෝකය ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffee, 1.2); 
+        dirLight.position.set(-15, 30, 10);
+        scene.add(dirLight);
 
-                if (isHour) {
-                    let num = i === 0 ? 12 : i / 5;
-                    let text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    let rad = (angle - 90) * Math.PI / 180;
-                    let radius = 118; 
-                    let x = 200 + radius * Math.cos(rad);
-                    let y = 200 + radius * Math.sin(rad) + 16; 
-                    
-                    text.setAttribute('x', x);
-                    text.setAttribute('y', y);
-                    text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('font-size', '44px');
-                    text.setAttribute('font-weight', '900');
-                    text.setAttribute('font-family', 'Arial, sans-serif');
-                    text.textContent = num;
-                    numbersGroup.appendChild(text);
+        // --- 3. දිවීමේ මාර්ගය සහ තණකොළ ---
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 }); 
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = 0;
+        scene.add(ground);
+
+        const pathGeo = new THREE.PlaneGeometry(15, 200);
+        const pathMat = new THREE.MeshLambertMaterial({ color: 0x8D6E63 }); 
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.y = 0.05;
+        scene.add(path);
+
+        // --- මැජික් වනාන්තරයේ ගස් සහ හතු ---
+        const sceneryObjects = [];
+
+        function createTree(x, z) {
+            const tree = new THREE.Group();
+            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 8);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1.5;
+            tree.add(trunk);
+
+            const leavesGeo = new THREE.BoxGeometry(3, 3, 3);
+            const leavesMat = new THREE.MeshLambertMaterial({ color: 0x2E7D32 });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 4;
+            leaves.rotation.x = Math.random() * 0.5;
+            leaves.rotation.y = Math.random() * 0.5;
+            tree.add(leaves);
+
+            tree.position.set(x, 0, z);
+            scene.add(tree);
+            sceneryObjects.push(tree);
+        }
+
+        function createMushroom(x, z) {
+            const mushroom = new THREE.Group();
+            const stemGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
+            const stemMat = new THREE.MeshLambertMaterial({ color: 0xFFFAFA });
+            const stem = new THREE.Mesh(stemGeo, stemMat);
+            stem.position.y = 1;
+            mushroom.add(stem);
+
+            const capGeo = new THREE.SphereGeometry(1.5, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const color = Math.random() > 0.5 ? 0xE53935 : 0xFFCA28; 
+            const capMat = new THREE.MeshLambertMaterial({ color: color });
+            const cap = new THREE.Mesh(capGeo, capMat);
+            cap.position.y = 2;
+            mushroom.add(cap);
+
+            mushroom.position.set(x, 0, z);
+            scene.add(mushroom);
+            sceneryObjects.push(mushroom);
+        }
+
+        for (let z = 20; z > -150; z -= 15) {
+            if (Math.random() > 0.4) createTree(-10 - Math.random() * 10, z);
+            else createMushroom(-9 - Math.random() * 5, z);
+            if (Math.random() > 0.4) createTree(10 + Math.random() * 10, z);
+            else createMushroom(9 + Math.random() * 5, z);
+        }
+
+        // --- 4. දුවන චරිතය ---
+        const playerGroup = new THREE.Group();
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0xff4400 }); 
+        const limbMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); 
+
+        const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), bodyMat);
+        head.position.y = 2.5;
+        playerGroup.add(head);
+
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const leftEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.1), eyeMat);
+        leftEye.position.set(-0.25, 2.6, -0.55);
+        playerGroup.add(leftEye);
+        const rightEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.1), eyeMat);
+        rightEye.position.set(0.25, 2.6, -0.55);
+        playerGroup.add(rightEye);
+
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 0.8), limbMat);
+        body.position.y = 1.25;
+        playerGroup.add(body);
+
+        const createLimb = (x, y, z) => {
+            const pivot = new THREE.Group();
+            pivot.position.set(x, y, z);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), bodyMat);
+            mesh.position.y = -0.6; 
+            pivot.add(mesh);
+            playerGroup.add(pivot);
+            return pivot;
+        };
+
+        const leftArm = createLimb(-0.9, 1.8, 0);
+        const rightArm = createLimb(0.9, 1.8, 0);
+        const leftLeg = createLimb(-0.35, 1.2, 0);
+        const rightLeg = createLimb(0.35, 1.2, 0);
+
+        playerGroup.position.set(0, 0, 3);
+        scene.add(playerGroup);
+
+        // --- 5. ක්‍රීඩාවේ විචල්‍යයන් ---
+        let score = 0;
+        let baseSpeed = 0.35; 
+        let speed = baseSpeed; 
+        let isGameOver = false;
+        let doors = []; 
+        let coins = []; 
+        let currentAnswer = 0;
+        let playerLane = 0; 
+        const laneWidth = 4.5; 
+
+        function updateScore(points) {
+            score += points;
+            const scoreBox = document.getElementById('scoreBox');
+            document.getElementById('score').innerText = score;
+            scoreBox.style.transform = 'scale(1.3)';
+            setTimeout(() => { scoreBox.style.transform = 'scale(1)'; }, 100);
+        }
+
+        function spawnCoins() {
+            let zPos = -20; 
+            for (let i = 0; i < 5; i++) {
+                const lane = Math.floor(Math.random() * 3) - 1; 
+                const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.15, 16);
+                coinGeo.rotateX(Math.PI / 2); 
+                const coinMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, roughness: 0.1 });
+                const coin = new THREE.Mesh(coinGeo, coinMat);
+                coin.position.set(lane * laneWidth, 1.5, zPos); 
+                scene.add(coin);
+                coins.push(coin);
+                zPos -= 10; 
+            }
+        }
+
+        function createDoorTexture(text) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = 'rgba(0, 50, 200, 0.6)'; 
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.strokeStyle = '#00FFFF'; ctx.lineWidth = 15;
+            ctx.strokeRect(0, 0, 256, 256); 
+            
+            ctx.font = 'bold 110px Arial';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function generateQuestionAndDoors() {
+            const num1 = Math.floor(Math.random() * 8) + 2; 
+            const num2 = Math.floor(Math.random() * 8) + 2;
+            currentAnswer = num1 * num2;
+            document.getElementById('question').innerText = `${num1} x ${num2} = ?`;
+
+            let answers = [currentAnswer];
+            while(answers.length < 3) {
+                let wrong = currentAnswer + (Math.floor(Math.random() * 20) - 10);
+                if (wrong !== currentAnswer && wrong > 0 && !answers.includes(wrong)) {
+                    answers.push(wrong);
                 }
             }
+            answers.sort(() => Math.random() - 0.5); 
+
+            const lanes = [-1, 0, 1];
+            for(let i = 0; i < 3; i++) {
+                const texture = createDoorTexture(answers[i].toString());
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+                const geometry = new THREE.PlaneGeometry(4, 5); 
+                const door = new THREE.Mesh(geometry, material);
+                
+                door.position.set(lanes[i] * laneWidth, 2.5, -80); 
+                door.userData = { isCorrect: answers[i] === currentAnswer };
+                scene.add(door);
+                doors.push(door);
+            }
+            spawnCoins(); 
         }
 
-        function drawArc(hAngle, mAngle) {
-            let startAngle = Math.min(hAngle, mAngle);
-            let endAngle = Math.max(hAngle, mAngle);
+        // --- 6. පාලනය (Keyboard & Touch/Swipe) ---
+        
+        // Keyboard (පරිගණක සඳහා)
+        window.addEventListener('keydown', (e) => {
+            if (isGameOver) return; 
+            if ((e.key === 'ArrowLeft' || e.key === 'a') && playerLane > -1) playerLane--;
+            if ((e.key === 'ArrowRight' || e.key === 'd') && playerLane < 1) playerLane++;
+        });
 
-            if (endAngle - startAngle > 180) {
-                startAngle = Math.max(hAngle, mAngle);
-                endAngle = Math.min(hAngle, mAngle) + 360;
+        // Touch Swipe (ජංගම දුරකථන සඳහා)
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        window.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: false});
+
+        // Swipe කරන විට බ්‍රව්සරය පහළට යාම වැළැක්වීම
+        window.addEventListener('touchmove', e => {
+            e.preventDefault(); 
+        }, {passive: false});
+
+        window.addEventListener('touchend', e => {
+            if (isGameOver) return;
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 40; // Swipe එකක් ලෙස සැලකීමට අවශ්‍ය අවම දුර
+            if (touchEndX < touchStartX - swipeThreshold && playerLane > -1) {
+                playerLane--; // වමට Swipe කිරීම
+            }
+            if (touchEndX > touchStartX + swipeThreshold && playerLane < 1) {
+                playerLane++; // දකුණට Swipe කිරීම
+            }
+        }
+
+        generateQuestionAndDoors();
+
+        function resetGame() {
+            score = 0;
+            speed = baseSpeed;
+            document.getElementById('score').innerText = score;
+            
+            doors.forEach(d => scene.remove(d));
+            doors = [];
+            coins.forEach(c => scene.remove(c)); 
+            coins = [];
+            
+            playerLane = 0;
+            playerGroup.position.x = 0;
+            document.getElementById('gameOverOverlay').style.display = 'none';
+            generateQuestionAndDoors();
+            isGameOver = false;
+        }
+
+        // --- 7. Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isGameOver) return; 
+
+            const time = clock.getElapsedTime();
+
+            const runSpeed = 18; 
+            leftArm.rotation.x = Math.sin(time * runSpeed) * 0.8;
+            rightArm.rotation.x = -Math.sin(time * runSpeed) * 0.8;
+            leftLeg.rotation.x = -Math.sin(time * runSpeed) * 0.8;
+            rightLeg.rotation.x = Math.sin(time * runSpeed) * 0.8;
+            playerGroup.position.y = Math.abs(Math.sin(time * runSpeed * 2)) * 0.2; 
+
+            const targetX = playerLane * laneWidth;
+            playerGroup.position.x += (targetX - playerGroup.position.x) * 0.2;
+            playerGroup.rotation.z = (playerGroup.position.x - targetX) * 0.05; 
+
+            sceneryObjects.forEach(obj => {
+                obj.position.z += speed;
+                if (obj.position.z > 15) {
+                    obj.position.z -= 160; 
+                }
+            });
+
+            for (let i = coins.length - 1; i >= 0; i--) {
+                let coin = coins[i];
+                coin.position.z += speed; 
+                coin.rotation.y += 0.08; 
+
+                if (Math.abs(coin.position.z - playerGroup.position.z) < 1.0 && 
+                    Math.abs(coin.position.x - playerGroup.position.x) < 1.5) {
+                    updateScore(2); 
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                    continue;
+                }
+                if (coin.position.z > camera.position.z + 5) {
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                }
             }
 
-            let radius = 45;
-            let startRad = (startAngle - 90) * Math.PI / 180;
-            let endRad = (endAngle - 90) * Math.PI / 180;
+            for (let i = doors.length - 1; i >= 0; i--) {
+                let door = doors[i];
+                door.position.z += speed;
 
-            let startX = 200 + radius * Math.cos(startRad);
-            let startY = 200 + radius * Math.sin(startRad);
-            let endX = 200 + radius * Math.cos(endRad);
-            let endY = 200 + radius * Math.sin(endRad);
+                if (door.position.z > playerGroup.position.z - 0.5 && door.position.z < playerGroup.position.z + 0.5) {
+                    if (Math.abs(door.position.x - playerGroup.position.x) < 2.0) {
+                        if (door.userData.isCorrect) {
+                            updateScore(10); 
+                            speed += 0.005; 
+                            
+                            doors.forEach(d => scene.remove(d));
+                            doors = [];
+                            coins.forEach(c => scene.remove(c));
+                            coins = [];
+                            generateQuestionAndDoors();
+                            break; 
+                        } else {
+                            isGameOver = true;
+                            document.getElementById('gameOverOverlay').style.display = 'flex';
+                            setTimeout(resetGame, 2000); 
+                            break;
+                        }
+                    }
+                }
+                if (door.position.z > camera.position.z + 5) {
+                    scene.remove(door);
+                    doors.splice(i, 1);
+                    if (doors.length === 0) {
+                        coins.forEach(c => scene.remove(c));
+                        coins = [];
+                        generateQuestionAndDoors(); 
+                    }
+                }
+            }
 
-            let d = `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${endX} ${endY}`;
-            angleArc.setAttribute('d', d);
+            renderer.render(scene, camera);
         }
+        
+        animate();
 
-        function setTime() {
-            const timeValues = timePicker.value.split(':');
-            let hours = parseInt(timeValues[0]);
-            let minutes = parseInt(timeValues[1]);
-
-            const minuteAngle = minutes * 6; 
-            const hourAngle = (hours % 12) * 30 + (minutes * 0.5); 
-
-            minuteHand.setAttribute('transform', `rotate(${minuteAngle} 200 200)`);
-            hourHand.setAttribute('transform', `rotate(${hourAngle} 200 200)`);
-
-            drawArc(hourAngle, minuteAngle);
-        }
-
-        timePicker.addEventListener('input', setTime);
-        drawClockFace();
-        setTime(); 
-
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
