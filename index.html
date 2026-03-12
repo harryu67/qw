@@ -7,11 +7,10 @@
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
         
-        /* ක්‍රීඩාවේ UI කොටස් */
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; display: none; /* ආරම්භයේදී සඟවා ඇත */ }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; display: none; }
         #question { 
             font-size: 45px; font-weight: bold; color: #fff; 
-            background: rgba(0, 0, 0, 0.7); padding: 15px 40px; 
+            background: rgba(0, 0, 0, 0.8); padding: 15px 40px; 
             border-radius: 20px; display: inline-block; 
             border: 4px solid #FFD700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
             transition: transform 0.2s;
@@ -19,7 +18,7 @@
         #scoreBox { 
             position: absolute; top: 20px; left: 30px; 
             font-size: 30px; font-weight: bold; color: #FFD700; 
-            background: rgba(0,0,0,0.7); padding: 10px 25px; 
+            background: rgba(0,0,0,0.8); padding: 10px 25px; 
             border-radius: 15px; border: 2px solid #FFD700;
             transition: transform 0.1s;
         }
@@ -29,43 +28,38 @@
             font-weight: bold; text-shadow: 2px 2px 4px #000; pointer-events: none; display: none;
         }
 
-        /* --- නව Start Screen එක --- */
         #startScreen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(92, 179, 255, 0.9), rgba(76, 175, 80, 0.9));
+            background: linear-gradient(135deg, rgba(92, 179, 255, 0.95), rgba(76, 175, 80, 0.95));
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: white; z-index: 30;
         }
-        #startScreen h1 { font-size: 60px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
+        #startScreen h1 { font-size: 65px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
         #startScreen p { font-size: 24px; margin: 10px 0 30px 0; text-shadow: 2px 2px 4px #000; text-align: center; }
         #playButton {
-            padding: 15px 50px; font-size: 30px; font-weight: bold;
+            padding: 15px 50px; font-size: 32px; font-weight: bold;
             color: #fff; background-color: #FF9800; border: 3px solid #FFF; border-radius: 40px;
             cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: transform 0.2s, background-color 0.2s;
         }
         #playButton:hover { transform: scale(1.1); background-color: #FFB74D; }
 
-        /* Game Over Screen */
         #gameOverOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(200, 0, 0, 0.85); display: none;
+            background: rgba(200, 0, 0, 0.9); display: none;
             flex-direction: column; justify-content: center; align-items: center;
             color: white; z-index: 20;
         }
         #gameOverOverlay h1 { font-size: 80px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
         #gameOverOverlay p { font-size: 30px; margin-top: 10px; text-align: center; }
 
-        /* Mobile Screens */
         @media (max-width: 768px) {
             #ui { top: 10px; }
-            #question { font-size: 30px; padding: 10px 25px; border-width: 3px; margin-top: 55px; }
-            #scoreBox { font-size: 20px; padding: 8px 15px; left: 10px; top: 10px; }
-            #instructions { font-size: 15px; bottom: 30px; }
-            
+            #question { font-size: 32px; padding: 10px 25px; border-width: 3px; margin-top: 55px; }
+            #scoreBox { font-size: 22px; padding: 8px 15px; left: 10px; top: 10px; }
+            #instructions { font-size: 16px; bottom: 30px; }
             #startScreen h1 { font-size: 45px; }
             #startScreen p { font-size: 18px; }
-            #playButton { font-size: 24px; padding: 12px 40px; }
-            
+            #playButton { font-size: 26px; padding: 12px 40px; }
             #gameOverOverlay h1 { font-size: 50px; }
             #gameOverOverlay p { font-size: 20px; }
         }
@@ -92,7 +86,48 @@
     </div>
 
     <script>
-        // --- 1. මූලික පරිසරය ---
+        // ==========================================
+        // --- Web Audio API මඟින් ශබ්ද නිර්මාණය ---
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // 1. කාසි ගන්නා විට නාදය (Coin Sound)
+        function playCoinSound() {
+            playTone(987.77, 'sine', 0.1, 0.15); // B5
+            setTimeout(() => playTone(1318.51, 'sine', 0.2, 0.15), 50); // E6
+        }
+
+        // 2. නිවැරදි පිළිතුර තේරූ විට (Correct Sound)
+        function playCorrectSound() {
+            playTone(523.25, 'sine', 0.1, 0.2); // C5
+            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100); // E5
+            setTimeout(() => playTone(783.99, 'sine', 0.3, 0.2), 200); // G5
+        }
+
+        // 3. වැරදුණු විට (Game Over Sound)
+        function playWrongSound() {
+            playTone(300, 'sawtooth', 0.3, 0.2);
+            setTimeout(() => playTone(250, 'sawtooth', 0.4, 0.2), 150);
+            setTimeout(() => playTone(200, 'sawtooth', 0.5, 0.2), 300);
+        }
+        // ==========================================
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x5CB3FF); 
         scene.fog = new THREE.Fog(0x5CB3FF, 40, 120); 
@@ -105,14 +140,12 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- 2. ආලෝකය ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffee, 1.2); 
         dirLight.position.set(-15, 30, 10);
         scene.add(dirLight);
 
-        // --- 3. දිවීමේ මාර්ගය ---
         const groundGeo = new THREE.PlaneGeometry(200, 200);
         const groundMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 }); 
         const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -127,7 +160,6 @@
         path.position.y = 0.05;
         scene.add(path);
 
-        // --- මැජික් වනාන්තරයේ ගස් සහ හතු ---
         const sceneryObjects = [];
 
         function createTree(x, z) {
@@ -178,7 +210,6 @@
             else createMushroom(9 + Math.random() * 5, z);
         }
 
-        // --- 4. දුවන චරිතය ---
         const playerGroup = new THREE.Group();
         const bodyMat = new THREE.MeshLambertMaterial({ color: 0xff4400 }); 
         const limbMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); 
@@ -217,28 +248,28 @@
         playerGroup.position.set(0, 0, 3);
         scene.add(playerGroup);
 
-        // --- 5. ක්‍රීඩාවේ විචල්‍යයන් ---
         let score = 0;
         let baseSpeed = 0.35; 
         let speed = baseSpeed; 
         let isGameOver = false;
-        let gameStarted = false; // නව විචල්‍යය: ක්‍රීඩාව ආරම්භ වී තිබේද?
+        let gameStarted = false; 
         let doors = []; 
         let coins = []; 
         let currentAnswer = 0;
         let playerLane = 0; 
         const laneWidth = 4.5; 
 
-        // Play බොත්තම සඳහා Event Listener
         document.getElementById('playButton').addEventListener('click', () => {
-            document.getElementById('startScreen').style.display = 'none'; // Start screen එක සැඟවීම
-            document.getElementById('ui').style.display = 'block'; // UI එක පෙන්වීම
+            // බ්‍රව්සරයේ ශබ්ද පද්ධතිය පණගැන්වීම
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+
+            document.getElementById('startScreen').style.display = 'none'; 
+            document.getElementById('ui').style.display = 'block'; 
             document.getElementById('instructions').style.display = 'block';
             
-            generateQuestionAndDoors(); // පළමු ප්‍රශ්නය ගෙන ඒම
-            gameStarted = true; // ක්‍රීඩාව ආරම්භ කිරීම
+            generateQuestionAndDoors(); 
+            gameStarted = true; 
             
-            // උපදෙස් තත්පර 4කින් මැකී යාමට සැලැස්වීම
             setTimeout(() => { document.getElementById('instructions').style.display = 'none'; }, 4000);
         });
 
@@ -316,7 +347,6 @@
             spawnCoins(); 
         }
 
-        // --- 6. පාලනය (Keyboard & Touch/Swipe) ---
         window.addEventListener('keydown', (e) => {
             if (isGameOver || !gameStarted) return; 
             if ((e.key === 'ArrowLeft' || e.key === 'a') && playerLane > -1) playerLane--;
@@ -363,7 +393,6 @@
             isGameOver = false;
         }
 
-        // --- 7. Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
@@ -372,7 +401,6 @@
 
             const time = clock.getElapsedTime();
 
-            // රොබෝගේ දිවීමේ Animation එක හැමවිටම ක්‍රියාත්මක වේ
             const runSpeed = 18; 
             leftArm.rotation.x = Math.sin(time * runSpeed) * 0.8;
             rightArm.rotation.x = -Math.sin(time * runSpeed) * 0.8;
@@ -382,7 +410,6 @@
 
             renderer.render(scene, camera);
 
-            // ක්‍රීඩාව ආරම්භ කර නැතිනම්, මෙතැනින් පහළ කේතය (පරිසරය චලනය වීම) ක්‍රියාත්මක නොවේ
             if (!gameStarted) return;
 
             const targetX = playerLane * laneWidth;
@@ -401,6 +428,7 @@
 
                 if (Math.abs(coin.position.z - playerGroup.position.z) < 1.0 && 
                     Math.abs(coin.position.x - playerGroup.position.x) < 1.5) {
+                    playCoinSound(); // --- කාසිය ගැනීමේ ශබ්දය ---
                     updateScore(2); 
                     scene.remove(coin);
                     coins.splice(i, 1);
@@ -419,6 +447,7 @@
                 if (door.position.z > playerGroup.position.z - 0.5 && door.position.z < playerGroup.position.z + 0.5) {
                     if (Math.abs(door.position.x - playerGroup.position.x) < 2.0) {
                         if (door.userData.isCorrect) {
+                            playCorrectSound(); // --- හරි පිළිතුරේ ශබ්දය ---
                             updateScore(10); 
                             speed += 0.005; 
                             
@@ -429,6 +458,7 @@
                             generateQuestionAndDoors();
                             break; 
                         } else {
+                            playWrongSound(); // --- වැරදුණු විට ශබ්දය ---
                             isGameOver = true;
                             document.getElementById('gameOverOverlay').style.display = 'flex';
                             setTimeout(resetGame, 2000); 
