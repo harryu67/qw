@@ -6,7 +6,9 @@
     <title>ගණිත ධාවකයා - මැජික් වනාන්තරය</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
+        
+        /* ක්‍රීඩාවේ UI කොටස් */
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; display: none; /* ආරම්භයේදී සඟවා ඇත */ }
         #question { 
             font-size: 45px; font-weight: bold; color: #fff; 
             background: rgba(0, 0, 0, 0.7); padding: 15px 40px; 
@@ -24,8 +26,26 @@
         #instructions { 
             position: absolute; bottom: 20px; width: 100%; 
             text-align: center; color: #fff; font-size: 22px; 
-            font-weight: bold; text-shadow: 2px 2px 4px #000; pointer-events: none;
+            font-weight: bold; text-shadow: 2px 2px 4px #000; pointer-events: none; display: none;
         }
+
+        /* --- නව Start Screen එක --- */
+        #startScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(92, 179, 255, 0.9), rgba(76, 175, 80, 0.9));
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 30;
+        }
+        #startScreen h1 { font-size: 60px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
+        #startScreen p { font-size: 24px; margin: 10px 0 30px 0; text-shadow: 2px 2px 4px #000; text-align: center; }
+        #playButton {
+            padding: 15px 50px; font-size: 30px; font-weight: bold;
+            color: #fff; background-color: #FF9800; border: 3px solid #FFF; border-radius: 40px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: transform 0.2s, background-color 0.2s;
+        }
+        #playButton:hover { transform: scale(1.1); background-color: #FFB74D; }
+
+        /* Game Over Screen */
         #gameOverOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(200, 0, 0, 0.85); display: none;
@@ -35,22 +55,17 @@
         #gameOverOverlay h1 { font-size: 80px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
         #gameOverOverlay p { font-size: 30px; margin-top: 10px; text-align: center; }
 
-        /* දුරකථන තිර සඳහා UI එක කුඩා කිරීම සහ ස්ථාන වෙනස් කිරීම */
+        /* Mobile Screens */
         @media (max-width: 768px) {
             #ui { top: 10px; }
-            #question { 
-                font-size: 30px; 
-                padding: 10px 25px; 
-                border-width: 3px; 
-                margin-top: 55px; /* ලකුණු තීරුවට ගැටෙන්නේ නැතිවෙන්න පහළට ගෙන ඇත */
-            }
-            #scoreBox { 
-                font-size: 20px; 
-                padding: 8px 15px; 
-                left: 10px; 
-                top: 10px; 
-            }
+            #question { font-size: 30px; padding: 10px 25px; border-width: 3px; margin-top: 55px; }
+            #scoreBox { font-size: 20px; padding: 8px 15px; left: 10px; top: 10px; }
             #instructions { font-size: 15px; bottom: 30px; }
+            
+            #startScreen h1 { font-size: 45px; }
+            #startScreen p { font-size: 18px; }
+            #playButton { font-size: 24px; padding: 12px 40px; }
+            
             #gameOverOverlay h1 { font-size: 50px; }
             #gameOverOverlay p { font-size: 20px; }
         }
@@ -58,6 +73,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <div id="startScreen">
+        <h1>ගණිත ධාවකයා</h1>
+        <p>මැජික් වනාන්තරයේ චක්කරය පුහුණු වෙමු!</p>
+        <button id="playButton">▶ ක්‍රීඩා කරන්න</button>
+        <p style="font-size: 16px; margin-top: 20px;">මංතීරුව මාරු කිරීමට Swipe කරන්න (හෝ ← → Keys)</p>
+    </div>
+
     <div id="ui">
         <div id="scoreBox">ලකුණු: <span id="score">0</span></div>
         <div id="question">? x ? =</div>
@@ -90,7 +112,7 @@
         dirLight.position.set(-15, 30, 10);
         scene.add(dirLight);
 
-        // --- 3. දිවීමේ මාර්ගය සහ තණකොළ ---
+        // --- 3. දිවීමේ මාර්ගය ---
         const groundGeo = new THREE.PlaneGeometry(200, 200);
         const groundMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 }); 
         const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -200,11 +222,25 @@
         let baseSpeed = 0.35; 
         let speed = baseSpeed; 
         let isGameOver = false;
+        let gameStarted = false; // නව විචල්‍යය: ක්‍රීඩාව ආරම්භ වී තිබේද?
         let doors = []; 
         let coins = []; 
         let currentAnswer = 0;
         let playerLane = 0; 
         const laneWidth = 4.5; 
+
+        // Play බොත්තම සඳහා Event Listener
+        document.getElementById('playButton').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none'; // Start screen එක සැඟවීම
+            document.getElementById('ui').style.display = 'block'; // UI එක පෙන්වීම
+            document.getElementById('instructions').style.display = 'block';
+            
+            generateQuestionAndDoors(); // පළමු ප්‍රශ්නය ගෙන ඒම
+            gameStarted = true; // ක්‍රීඩාව ආරම්භ කිරීම
+            
+            // උපදෙස් තත්පර 4කින් මැකී යාමට සැලැස්වීම
+            setTimeout(() => { document.getElementById('instructions').style.display = 'none'; }, 4000);
+        });
 
         function updateScore(points) {
             score += points;
@@ -253,7 +289,6 @@
             
             const qElement = document.getElementById('question');
             qElement.innerText = `${num1} x ${num2} = ?`;
-            // ප්‍රශ්නය මාරු වෙනකොට පොඩි Animation එකක්
             qElement.style.transform = 'scale(1.1)';
             setTimeout(() => { qElement.style.transform = 'scale(1)'; }, 150);
 
@@ -283,7 +318,7 @@
 
         // --- 6. පාලනය (Keyboard & Touch/Swipe) ---
         window.addEventListener('keydown', (e) => {
-            if (isGameOver) return; 
+            if (isGameOver || !gameStarted) return; 
             if ((e.key === 'ArrowLeft' || e.key === 'a') && playerLane > -1) playerLane--;
             if ((e.key === 'ArrowRight' || e.key === 'd') && playerLane < 1) playerLane++;
         });
@@ -300,7 +335,7 @@
         }, {passive: false});
 
         window.addEventListener('touchend', e => {
-            if (isGameOver) return;
+            if (isGameOver || !gameStarted) return;
             touchEndX = e.changedTouches[0].screenX;
             handleSwipe();
         });
@@ -310,8 +345,6 @@
             if (touchEndX < touchStartX - swipeThreshold && playerLane > -1) playerLane--;
             if (touchEndX > touchStartX + swipeThreshold && playerLane < 1) playerLane++;
         }
-
-        generateQuestionAndDoors();
 
         function resetGame() {
             score = 0;
@@ -339,12 +372,18 @@
 
             const time = clock.getElapsedTime();
 
+            // රොබෝගේ දිවීමේ Animation එක හැමවිටම ක්‍රියාත්මක වේ
             const runSpeed = 18; 
             leftArm.rotation.x = Math.sin(time * runSpeed) * 0.8;
             rightArm.rotation.x = -Math.sin(time * runSpeed) * 0.8;
             leftLeg.rotation.x = -Math.sin(time * runSpeed) * 0.8;
             rightLeg.rotation.x = Math.sin(time * runSpeed) * 0.8;
             playerGroup.position.y = Math.abs(Math.sin(time * runSpeed * 2)) * 0.2; 
+
+            renderer.render(scene, camera);
+
+            // ක්‍රීඩාව ආරම්භ කර නැතිනම්, මෙතැනින් පහළ කේතය (පරිසරය චලනය වීම) ක්‍රියාත්මක නොවේ
+            if (!gameStarted) return;
 
             const targetX = playerLane * laneWidth;
             playerGroup.position.x += (targetX - playerGroup.position.x) * 0.2;
@@ -407,8 +446,6 @@
                     }
                 }
             }
-
-            renderer.render(scene, camera);
         }
         
         animate();
