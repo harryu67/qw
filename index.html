@@ -86,9 +86,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // --- Web Audio API මඟින් ශබ්ද නිර්මාණය ---
-        // ==========================================
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playTone(freq, type, duration, vol=0.1) {
@@ -107,26 +104,22 @@
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        // 1. කාසි ගන්නා විට නාදය (Coin Sound)
         function playCoinSound() {
-            playTone(987.77, 'sine', 0.1, 0.15); // B5
-            setTimeout(() => playTone(1318.51, 'sine', 0.2, 0.15), 50); // E6
+            playTone(987.77, 'sine', 0.1, 0.15); 
+            setTimeout(() => playTone(1318.51, 'sine', 0.2, 0.15), 50); 
         }
 
-        // 2. නිවැරදි පිළිතුර තේරූ විට (Correct Sound)
         function playCorrectSound() {
-            playTone(523.25, 'sine', 0.1, 0.2); // C5
-            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100); // E5
-            setTimeout(() => playTone(783.99, 'sine', 0.3, 0.2), 200); // G5
+            playTone(523.25, 'sine', 0.1, 0.2); 
+            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100); 
+            setTimeout(() => playTone(783.99, 'sine', 0.3, 0.2), 200); 
         }
 
-        // 3. වැරදුණු විට (Game Over Sound)
         function playWrongSound() {
             playTone(300, 'sawtooth', 0.3, 0.2);
             setTimeout(() => playTone(250, 'sawtooth', 0.4, 0.2), 150);
             setTimeout(() => playTone(200, 'sawtooth', 0.5, 0.2), 300);
         }
-        // ==========================================
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x5CB3FF); 
@@ -136,7 +129,11 @@
         camera.position.set(0, 7, 14);
         camera.lookAt(0, 2, -10);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); // ජංගම දුරකථන වේගවත් කිරීමට antialias ඉවත් කළා
+        
+        // දුරකථනයේ Pixel Ratio එකට ගැලපෙන ලෙස සැකසීම (Performance Optimization)
+        const pixelRatio = window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio;
+        renderer.setPixelRatio(pixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -191,7 +188,7 @@
             stem.position.y = 1;
             mushroom.add(stem);
 
-            const capGeo = new THREE.SphereGeometry(1.5, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const capGeo = new THREE.SphereGeometry(1.5, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2);
             const color = Math.random() > 0.5 ? 0xE53935 : 0xFFCA28; 
             const capMat = new THREE.MeshLambertMaterial({ color: color });
             const cap = new THREE.Mesh(capGeo, capMat);
@@ -260,9 +257,7 @@
         const laneWidth = 4.5; 
 
         document.getElementById('playButton').addEventListener('click', () => {
-            // බ්‍රව්සරයේ ශබ්ද පද්ධතිය පණගැන්වීම
             if(audioCtx.state === 'suspended') audioCtx.resume();
-
             document.getElementById('startScreen').style.display = 'none'; 
             document.getElementById('ui').style.display = 'block'; 
             document.getElementById('instructions').style.display = 'block';
@@ -399,7 +394,12 @@
             requestAnimationFrame(animate);
             if (isGameOver) return; 
 
+            // කාලය ගණනය කිරීම (Delta Time)
+            const delta = clock.getDelta();
             const time = clock.getElapsedTime();
+            
+            // Frame rate එක අනුව වේගය සමබර කිරීම සඳහා ගුණාකාරයක් (Multiplier)
+            const speedMultiplier = Math.min(delta * 60, 3); // උපරිම ගුණාකාරය 3කට සීමා කර ඇත
 
             const runSpeed = 18; 
             leftArm.rotation.x = Math.sin(time * runSpeed) * 0.8;
@@ -413,22 +413,26 @@
             if (!gameStarted) return;
 
             const targetX = playerLane * laneWidth;
-            playerGroup.position.x += (targetX - playerGroup.position.x) * 0.2;
+            // හැරෙන වේගයටත් Multiplier එක යෙදීම
+            playerGroup.position.x += (targetX - playerGroup.position.x) * 0.2 * speedMultiplier;
             playerGroup.rotation.z = (playerGroup.position.x - targetX) * 0.05; 
 
+            // පරිසරය පසුපසට යාම Delta time හරහා සමබර කිරීම
+            const currentSpeed = speed * speedMultiplier;
+
             sceneryObjects.forEach(obj => {
-                obj.position.z += speed;
+                obj.position.z += currentSpeed;
                 if (obj.position.z > 15) obj.position.z -= 160; 
             });
 
             for (let i = coins.length - 1; i >= 0; i--) {
                 let coin = coins[i];
-                coin.position.z += speed; 
-                coin.rotation.y += 0.08; 
+                coin.position.z += currentSpeed; 
+                coin.rotation.y += 0.08 * speedMultiplier; 
 
                 if (Math.abs(coin.position.z - playerGroup.position.z) < 1.0 && 
                     Math.abs(coin.position.x - playerGroup.position.x) < 1.5) {
-                    playCoinSound(); // --- කාසිය ගැනීමේ ශබ්දය ---
+                    playCoinSound(); 
                     updateScore(2); 
                     scene.remove(coin);
                     coins.splice(i, 1);
@@ -442,12 +446,12 @@
 
             for (let i = doors.length - 1; i >= 0; i--) {
                 let door = doors[i];
-                door.position.z += speed;
+                door.position.z += currentSpeed;
 
                 if (door.position.z > playerGroup.position.z - 0.5 && door.position.z < playerGroup.position.z + 0.5) {
                     if (Math.abs(door.position.x - playerGroup.position.x) < 2.0) {
                         if (door.userData.isCorrect) {
-                            playCorrectSound(); // --- හරි පිළිතුරේ ශබ්දය ---
+                            playCorrectSound(); 
                             updateScore(10); 
                             speed += 0.005; 
                             
@@ -458,7 +462,7 @@
                             generateQuestionAndDoors();
                             break; 
                         } else {
-                            playWrongSound(); // --- වැරදුණු විට ශබ්දය ---
+                            playWrongSound(); 
                             isGameOver = true;
                             document.getElementById('gameOverOverlay').style.display = 'flex';
                             setTimeout(resetGame, 2000); 
