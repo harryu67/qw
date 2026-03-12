@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ගණිත ධාවකයා - මැජික් වනාන්තරය</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; /* ස්වයිප් කරද්දී පිටුව එහා මෙහා වීම නවතයි */ }
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
         #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
         #question { 
             font-size: 45px; font-weight: bold; color: #fff; 
             background: rgba(0, 0, 0, 0.7); padding: 15px 40px; 
             border-radius: 20px; display: inline-block; 
             border: 4px solid #FFD700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            transition: transform 0.2s;
         }
         #scoreBox { 
             position: absolute; top: 20px; left: 30px; 
@@ -34,11 +35,22 @@
         #gameOverOverlay h1 { font-size: 80px; margin: 0; text-shadow: 3px 3px 6px #000; text-align: center; }
         #gameOverOverlay p { font-size: 30px; margin-top: 10px; text-align: center; }
 
-        /* දුරකථන තිර සඳහා (Mobile Screens) UI එක කුඩා කිරීම */
+        /* දුරකථන තිර සඳහා UI එක කුඩා කිරීම සහ ස්ථාන වෙනස් කිරීම */
         @media (max-width: 768px) {
-            #question { font-size: 32px; padding: 10px 25px; border-width: 3px; }
-            #scoreBox { font-size: 22px; padding: 8px 15px; left: 15px; top: 15px; }
-            #instructions { font-size: 16px; bottom: 30px; }
+            #ui { top: 10px; }
+            #question { 
+                font-size: 30px; 
+                padding: 10px 25px; 
+                border-width: 3px; 
+                margin-top: 55px; /* ලකුණු තීරුවට ගැටෙන්නේ නැතිවෙන්න පහළට ගෙන ඇත */
+            }
+            #scoreBox { 
+                font-size: 20px; 
+                padding: 8px 15px; 
+                left: 10px; 
+                top: 10px; 
+            }
+            #instructions { font-size: 15px; bottom: 30px; }
             #gameOverOverlay h1 { font-size: 50px; }
             #gameOverOverlay p { font-size: 20px; }
         }
@@ -238,7 +250,12 @@
             const num1 = Math.floor(Math.random() * 8) + 2; 
             const num2 = Math.floor(Math.random() * 8) + 2;
             currentAnswer = num1 * num2;
-            document.getElementById('question').innerText = `${num1} x ${num2} = ?`;
+            
+            const qElement = document.getElementById('question');
+            qElement.innerText = `${num1} x ${num2} = ?`;
+            // ප්‍රශ්නය මාරු වෙනකොට පොඩි Animation එකක්
+            qElement.style.transform = 'scale(1.1)';
+            setTimeout(() => { qElement.style.transform = 'scale(1)'; }, 150);
 
             let answers = [currentAnswer];
             while(answers.length < 3) {
@@ -265,15 +282,12 @@
         }
 
         // --- 6. පාලනය (Keyboard & Touch/Swipe) ---
-        
-        // Keyboard (පරිගණක සඳහා)
         window.addEventListener('keydown', (e) => {
             if (isGameOver) return; 
             if ((e.key === 'ArrowLeft' || e.key === 'a') && playerLane > -1) playerLane--;
             if ((e.key === 'ArrowRight' || e.key === 'd') && playerLane < 1) playerLane++;
         });
 
-        // Touch Swipe (ජංගම දුරකථන සඳහා)
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -281,7 +295,6 @@
             touchStartX = e.changedTouches[0].screenX;
         }, {passive: false});
 
-        // Swipe කරන විට බ්‍රව්සරය පහළට යාම වැළැක්වීම
         window.addEventListener('touchmove', e => {
             e.preventDefault(); 
         }, {passive: false});
@@ -293,13 +306,9 @@
         });
 
         function handleSwipe() {
-            const swipeThreshold = 40; // Swipe එකක් ලෙස සැලකීමට අවශ්‍ය අවම දුර
-            if (touchEndX < touchStartX - swipeThreshold && playerLane > -1) {
-                playerLane--; // වමට Swipe කිරීම
-            }
-            if (touchEndX > touchStartX + swipeThreshold && playerLane < 1) {
-                playerLane++; // දකුණට Swipe කිරීම
-            }
+            const swipeThreshold = 40; 
+            if (touchEndX < touchStartX - swipeThreshold && playerLane > -1) playerLane--;
+            if (touchEndX > touchStartX + swipeThreshold && playerLane < 1) playerLane++;
         }
 
         generateQuestionAndDoors();
@@ -343,9 +352,7 @@
 
             sceneryObjects.forEach(obj => {
                 obj.position.z += speed;
-                if (obj.position.z > 15) {
-                    obj.position.z -= 160; 
-                }
+                if (obj.position.z > 15) obj.position.z -= 160; 
             });
 
             for (let i = coins.length - 1; i >= 0; i--) {
